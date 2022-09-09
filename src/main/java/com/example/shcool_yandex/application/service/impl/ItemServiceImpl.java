@@ -45,13 +45,17 @@ public class ItemServiceImpl implements ItemService {
     public void createItem(SystemItemImport systemItemImport, String updateDate) {
         log.info("invoke createItem({}, {})", systemItemImport, updateDate);
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-
-        SystemItemEntity entity = systemItemRepository.findByNameId(systemItemImport.getItemId())
-                .orElse(new SystemItemEntity());
-        entity.setNameId(systemItemImport.getItemId());
+        SystemItemEntity entity;
+        if (systemItemRepository.findByNameId(systemItemImport.getId()).isPresent()) {
+            entity = systemItemRepository.findByNameId(systemItemImport.getId()).get();
+        } else {
+            entity = new SystemItemEntity();
+        }
+        entity.setNameId(systemItemImport.getId());
         entity.setDate(LocalDateTime.parse(updateDate, formatter));
-        entity.setType(systemItemImport.getType());
+        entity.setType(SystemItemType.valueOf(systemItemImport.getType()));
         entity.setUrl(systemItemImport.getUrl());
+        entity.setParentId(systemItemImport.getParentId());
         entity.setSize(systemItemImport.getSize());
 
         systemItemRepository.save(entity);
@@ -70,8 +74,7 @@ public class ItemServiceImpl implements ItemService {
         List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentId(entity.getNameId());
         if (children.isEmpty()) {
             return modelMapper.mapToSystemItem(entity, entity.getType() == SystemItemType.FILE ? null : Collections.emptyList());
-        }
-        else {
+        } else {
             List<SystemItem> systemItems = new ArrayList<>();
             children.forEach((item) -> systemItems.add(getItem(item.getNameId())));
             return modelMapper.mapToSystemItem(entity, systemItems);

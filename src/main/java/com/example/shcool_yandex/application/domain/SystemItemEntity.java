@@ -26,7 +26,7 @@ public class SystemItemEntity {
     /**
      * Имя.
      */
-    @Column(name = "itemName")
+    @Column(name = "item_name")
     private String nameId;
 
     /**
@@ -51,6 +51,7 @@ public class SystemItemEntity {
      * Тип файла.
      */
     @Column(name = "type")
+    @Enumerated(EnumType.STRING)
     private SystemItemType type;
 
     /**

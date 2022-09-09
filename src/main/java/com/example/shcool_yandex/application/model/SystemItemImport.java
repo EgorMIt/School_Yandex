@@ -18,7 +18,7 @@ public class SystemItemImport {
     /**
      * Имя.
      */
-    private String itemId;
+    private String id;
 
     /**
      * Ссылка на файл.
@@ -28,12 +28,12 @@ public class SystemItemImport {
     /**
      * Идентификатор родительского элемента.
      */
-    private Long parentId;
+    private String parentId;
 
     /**
      * Тип файла.
      */
-    private SystemItemType type;
+    private String type;
 
     /**
      * Размер файла.

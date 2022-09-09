@@ -52,6 +52,7 @@ public class ItemController {
      */
     @DeleteMapping(value = Endpoints.DELETE_ITEM)
     public ResponseEntity<Object> deleteItem(@PathVariable String id) {
+        itemService.deleteItem(id);
         return ResponseEntity.ok().build();
     }
 }
