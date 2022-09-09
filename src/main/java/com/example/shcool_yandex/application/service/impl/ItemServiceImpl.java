@@ -6,9 +6,12 @@ import com.example.shcool_yandex.application.model.SystemItem;
 import com.example.shcool_yandex.application.model.SystemItemImport;
 import com.example.shcool_yandex.application.service.ItemService;
 import com.example.shcool_yandex.application.utils.ModelMapper;
+import com.example.shcool_yandex.application.utils.ModelValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -41,24 +44,48 @@ public class ItemServiceImpl implements ItemService {
      */
     private final ModelMapper modelMapper;
 
+    /**
+     * {@link ModelValidator}.
+     */
+    private final ModelValidator modelValidator;
+
     @Override
-    public void createItem(SystemItemImport systemItemImport, String updateDate) {
-        log.info("invoke createItem({}, {})", systemItemImport, updateDate);
+    @Transactional
+    public void createItem(SystemItemImport item, String updateDate) {
+        log.info("invoke createItem({}, {})", item, updateDate);
+        modelValidator.validateItemImport(item);
+        modelValidator.validateDate(updateDate);
+
         DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+
         SystemItemEntity entity;
-        if (systemItemRepository.findByNameId(systemItemImport.getId()).isPresent()) {
-            entity = systemItemRepository.findByNameId(systemItemImport.getId()).get();
+        if (systemItemRepository.findByNameId(item.getId()).isPresent()) {
+            entity = systemItemRepository.findByNameId(item.getId()).get();
         } else {
             entity = new SystemItemEntity();
         }
-        entity.setNameId(systemItemImport.getId());
+        SystemItemType type = SystemItemType.valueOf(item.getType());
+        entity.setNameId(item.getId());
         entity.setDate(LocalDateTime.parse(updateDate, formatter));
-        entity.setType(SystemItemType.valueOf(systemItemImport.getType()));
-        entity.setUrl(systemItemImport.getUrl());
-        entity.setParentId(systemItemImport.getParentId());
-        entity.setSize(systemItemImport.getSize());
+        entity.setType(type);
+        entity.setUrl(item.getUrl());
+
+        if (!ObjectUtils.isEmpty(item.getParentId())) {
+            SystemItemEntity parentEntity = systemItemRepository.findByNameId(item.getParentId())
+                    .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
+            entity.setParentId(item.getParentId());
+        } else {
+            entity.setParentId(null);
+        }
+        if (type == SystemItemType.FILE) {
+            entity.setSize(item.getSize());
+            updateParentFolderSize(entity.getParentId(), item.getSize());
+        } else {
+            entity.setSize(null);
+        }
 
         systemItemRepository.save(entity);
+
 
         SystemItemHistoryEntity historyEntity = new SystemItemHistoryEntity();
         historyEntity.setSystemItem(entity);
@@ -86,6 +113,23 @@ public class ItemServiceImpl implements ItemService {
         log.info("invoke deleteItem({})", systemItemNameId);
         SystemItemEntity entity = systemItemRepository.findByNameId(systemItemNameId)
                 .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
-        systemItemRepository.delete(entity);
+        List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentId(entity.getNameId());
+        if (children.isEmpty()) {
+            systemItemRepository.delete(entity);
+        } else {
+            children.forEach((item) -> deleteItem(item.getNameId()));
+            systemItemRepository.delete(entity);
+        }
+    }
+
+    private void updateParentFolderSize(String systemItemNameId, Long size) {
+        if (!ObjectUtils.isEmpty(systemItemNameId)) {
+            SystemItemEntity entity = systemItemRepository.findByNameId(systemItemNameId)
+                    .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
+            long oldSize = entity.getSize() == null ? 0 : entity.getSize();
+            entity.setSize(oldSize + size);
+            systemItemRepository.save(entity);
+            updateParentFolderSize(entity.getParentId(), size);
+        }
     }
 }

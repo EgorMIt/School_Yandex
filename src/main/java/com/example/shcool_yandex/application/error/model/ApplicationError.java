@@ -1,7 +1,6 @@
 package com.example.shcool_yandex.application.error.model;
 
 import lombok.Data;
-import org.springframework.http.HttpStatus;
 
 /**
  * Ошибка приложения.
@@ -12,23 +11,23 @@ import org.springframework.http.HttpStatus;
 public class ApplicationError {
 
     /**
+     * Статус, который возвращается при вызове ошибки.
+     */
+    private Integer code;
+
+    /**
      * Сообщение об ошибке.
      */
     private String message;
 
     /**
-     * Статус, который возвращается при вызове ошибки.
-     */
-    private HttpStatus status;
-
-    /**
      * Создание ошибки.
      *
      * @param message текст ошибки.
-     * @param status  статус ошибки.
+     * @param code  статус ошибки.
      */
-    public ApplicationError(String message, HttpStatus status) {
+    public ApplicationError(String message, Integer code) {
+        this.code = code;
         this.message = message;
-        this.status = status;
     }
 }

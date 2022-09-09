@@ -13,14 +13,9 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorDescriptions {
-    INCORRECT_ITEM_REQUEST("ITEM_01", "Validation Failed", HttpStatus.BAD_REQUEST),
-    ITEM_NOT_FOUND("CHAPTER_02", "Item not found", HttpStatus.NOT_FOUND),
-    HANDLER_NOT_FOUND("SYSTEM_404", "HANDLER_NOT_FOUND", HttpStatus.NOT_FOUND);
-
-    /**
-     * Код ошибки.
-     */
-    private final String code;
+    INCORRECT_ITEM_REQUEST("Validation Failed", HttpStatus.BAD_REQUEST.value()),
+    ITEM_NOT_FOUND("Item not found", HttpStatus.NOT_FOUND.value()),
+    HANDLER_NOT_FOUND("HANDLER_NOT_FOUND", HttpStatus.NOT_FOUND.value());
 
     /**
      * Сообщение ошибки.
@@ -28,9 +23,9 @@ public enum ErrorDescriptions {
     private final String message;
 
     /**
-     * Статус ошибки.
+     * Код ошибки.
      */
-    private final HttpStatus status;
+    private final Integer code;
 
     /**
      * Метод выбрасывает исключение приложения.
@@ -42,7 +37,7 @@ public enum ErrorDescriptions {
     }
 
     /**
-     * Метод выбрасывает ислючение если объект == null.
+     * Метод выбрасывает исключение если объект == null.
      *
      * @param obj объект для проверки
      */
@@ -75,7 +70,7 @@ public enum ErrorDescriptions {
     }
 
     public ApplicationError applicationError() {
-        return new ApplicationError(this.message, this.status);
+        return new ApplicationError(this.message, this.code);
     }
 
 

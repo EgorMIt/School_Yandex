@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 @ControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
     /**
      * Обработка исключения {@link NoHandlerFoundException}.
      *
@@ -45,8 +46,9 @@ public class GlobalExceptionHandler {
     @ResponseBody
     @ExceptionHandler(ApplicationException.class)
     public ApplicationError handleApplicationException(ApplicationException ex, HttpServletResponse response) {
-        response.setStatus(ex.getError().getStatus().value());
-        log.debug("Exception happened {}", ex.getMessage());
+        response.setStatus(ex.getError().getCode());
+        log.info("Exception happened {}", ex.getMessage());
         return ex.getError();
     }
+
 }
