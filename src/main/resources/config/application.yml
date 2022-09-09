@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: School_Yandex
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: 1234
+  jpa:
+    database: POSTGRESQL
+  flyway:
+    locations: classpath:db/migration
+  sql:
+    init:
+      platform: postgres
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
