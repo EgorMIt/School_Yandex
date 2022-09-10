@@ -52,4 +52,5 @@ public class SystemItem {
      * Дочерние элементы.
      */
     private List<SystemItem> children;
+
 }

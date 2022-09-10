@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 /**
  * Модель записи об обновлении файла.
  *
@@ -28,7 +30,7 @@ public class SystemItemHistoryUnit {
     /**
      * Идентификатор родительского элемента.
      */
-    private Long parentId;
+    private String parentId;
 
     /**
      * Тип файла.
@@ -43,6 +45,6 @@ public class SystemItemHistoryUnit {
     /**
      * Дата обновления.
      */
-    private String date;
+    private LocalDateTime date;
 
 }

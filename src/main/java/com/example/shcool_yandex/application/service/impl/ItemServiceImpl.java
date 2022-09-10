@@ -1,8 +1,12 @@
 package com.example.shcool_yandex.application.service.impl;
 
-import com.example.shcool_yandex.application.domain.*;
+import com.example.shcool_yandex.application.domain.SystemItemEntity;
+import com.example.shcool_yandex.application.domain.SystemItemRepository;
+import com.example.shcool_yandex.application.domain.SystemItemType;
 import com.example.shcool_yandex.application.error.ErrorDescriptions;
 import com.example.shcool_yandex.application.model.SystemItem;
+import com.example.shcool_yandex.application.model.SystemItemHistoryResponse;
+import com.example.shcool_yandex.application.model.SystemItemHistoryUnit;
 import com.example.shcool_yandex.application.model.SystemItemImport;
 import com.example.shcool_yandex.application.service.ItemService;
 import com.example.shcool_yandex.application.utils.ModelMapper;
@@ -18,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Реализация сервиса работы с system_item.
@@ -35,11 +40,6 @@ public class ItemServiceImpl implements ItemService {
     private final SystemItemRepository systemItemRepository;
 
     /**
-     * {@link SystemItemHistoryRepository}.
-     */
-    private final SystemItemHistoryRepository systemItemHistoryRepository;
-
-    /**
      * {@link ModelMapper}.
      */
     private final ModelMapper modelMapper;
@@ -49,6 +49,11 @@ public class ItemServiceImpl implements ItemService {
      */
     private final ModelValidator modelValidator;
 
+    /**
+     * {@link DateTimeFormatter}.
+     */
+    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+
     @Override
     @Transactional
     public void createItem(SystemItemImport item, String updateDate) {
@@ -56,64 +61,78 @@ public class ItemServiceImpl implements ItemService {
         modelValidator.validateItemImport(item);
         modelValidator.validateDate(updateDate);
 
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
-
-        SystemItemEntity entity;
-        if (systemItemRepository.findByNameId(item.getId()).isPresent()) {
-            entity = systemItemRepository.findByNameId(item.getId()).get();
-        } else {
-            entity = new SystemItemEntity();
-        }
+        SystemItemEntity entity = new SystemItemEntity();
         SystemItemType type = SystemItemType.valueOf(item.getType());
+
         entity.setNameId(item.getId());
         entity.setDate(LocalDateTime.parse(updateDate, formatter));
         entity.setType(type);
-        entity.setUrl(item.getUrl());
+        entity.setIsActive(true);
 
         if (!ObjectUtils.isEmpty(item.getParentId())) {
-            SystemItemEntity parentEntity = systemItemRepository.findByNameId(item.getParentId())
+            systemItemRepository.findByNameIdAndIsActive(item.getParentId(), true)
                     .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
             entity.setParentId(item.getParentId());
         } else {
             entity.setParentId(null);
         }
-        if (type == SystemItemType.FILE) {
-            entity.setSize(item.getSize());
-            updateParentFolderSize(entity.getParentId(), item.getSize());
+
+        if (systemItemRepository.findByNameIdAndIsActive(item.getId(), true).isPresent()) {
+            SystemItemEntity previousEntity = systemItemRepository.findByNameIdAndIsActive(item.getId(), true).get();
+            ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfFalse(type.equals(previousEntity.getType()));
+            previousEntity.setIsActive(false);
+            if (type == SystemItemType.FOLDER) {
+                entity.setSize(previousEntity.getSize());
+            } else {
+                entity.setSize(item.getSize());
+            }
+            systemItemRepository.save(previousEntity);
+            if ((previousEntity.getParentId() != null && (entity.getParentId() == null
+                    || !previousEntity.getParentId().equals(entity.getParentId())))) {
+                updateParentFolderSize(previousEntity.getParentId(), -previousEntity.getSize());
+            }
+            if (previousEntity.getParentId() != null) {
+                updateParentFolderSize(entity.getParentId(), item.getSize() - previousEntity.getSize());
+            } else {
+                updateParentFolderSize(entity.getParentId(), item.getSize());
+            }
+
         } else {
-            entity.setSize(null);
+            if (type == SystemItemType.FILE) {
+                entity.setSize(item.getSize());
+                entity.setUrl(item.getUrl());
+                updateParentFolderSize(entity.getParentId(), item.getSize());
+            }
+            else {
+                entity.setSize(0L);
+                entity.setUrl(null);
+            }
         }
 
         systemItemRepository.save(entity);
-
-
-        SystemItemHistoryEntity historyEntity = new SystemItemHistoryEntity();
-        historyEntity.setSystemItem(entity);
-        historyEntity.setDate(LocalDateTime.parse(updateDate, formatter));
-        systemItemHistoryRepository.save(historyEntity);
     }
 
     @Override
     public SystemItem getItem(String systemItemNameId) {
         log.info("invoke getItem({})", systemItemNameId);
-        SystemItemEntity entity = systemItemRepository.findByNameId(systemItemNameId)
+        SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                 .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
-        List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentId(entity.getNameId());
+        List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentIdAndIsActive(entity.getNameId(), true);
         if (children.isEmpty()) {
             return modelMapper.mapToSystemItem(entity, entity.getType() == SystemItemType.FILE ? null : Collections.emptyList());
         } else {
-            List<SystemItem> systemItems = new ArrayList<>();
-            children.forEach((item) -> systemItems.add(getItem(item.getNameId())));
-            return modelMapper.mapToSystemItem(entity, systemItems);
+            List<SystemItem> childrenSystemItems = new ArrayList<>();
+            children.forEach((item) -> childrenSystemItems.add(getItem(item.getNameId())));
+            return modelMapper.mapToSystemItem(entity, childrenSystemItems);
         }
     }
 
     @Override
     public void deleteItem(String systemItemNameId) {
         log.info("invoke deleteItem({})", systemItemNameId);
-        SystemItemEntity entity = systemItemRepository.findByNameId(systemItemNameId)
+        SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                 .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
-        List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentId(entity.getNameId());
+        List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentIdAndIsActive(entity.getNameId(), true);
         if (children.isEmpty()) {
             systemItemRepository.delete(entity);
         } else {
@@ -122,9 +141,40 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    @Override
+    public SystemItemHistoryResponse getUpdates(String date) {
+        log.info("invoke getUpdates({})", date);
+        modelValidator.validateDate(date);
+
+        LocalDateTime finishDate = LocalDateTime.parse(date, formatter);
+        LocalDateTime startDate = finishDate.minusDays(1);
+        List<SystemItemHistoryUnit> items = systemItemRepository.findAllByIsActiveAndDateBetweenOrderByDateDesc(true, startDate, finishDate)
+                .stream()
+                .map(modelMapper::mapToSystemItemHistoryUnit)
+                .collect(Collectors.toList());
+        return SystemItemHistoryResponse.of(items);
+    }
+
+    @Override
+    public SystemItemHistoryResponse getHistoryForItem(String systemItemNameId, String dateStart, String dateEnd) {
+        log.info("invoke getHistoryForItem({}, {}, {})", systemItemNameId, dateStart, dateEnd);
+        modelValidator.validateDate(dateStart);
+        modelValidator.validateDate(dateEnd);
+
+        LocalDateTime startDate = LocalDateTime.parse(dateStart, formatter);
+        LocalDateTime finishDate = LocalDateTime.parse(dateEnd, formatter);
+        finishDate = finishDate.minusSeconds(1);
+
+        List<SystemItemHistoryUnit> items = systemItemRepository.findAllByNameIdAndDateBetweenOrderByDateDesc(systemItemNameId, startDate, finishDate)
+                .stream()
+                .map(modelMapper::mapToSystemItemHistoryUnit)
+                .collect(Collectors.toList());
+        return SystemItemHistoryResponse.of(items);
+    }
+
     private void updateParentFolderSize(String systemItemNameId, Long size) {
         if (!ObjectUtils.isEmpty(systemItemNameId)) {
-            SystemItemEntity entity = systemItemRepository.findByNameId(systemItemNameId)
+            SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                     .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
             long oldSize = entity.getSize() == null ? 0 : entity.getSize();
             entity.setSize(oldSize + size);

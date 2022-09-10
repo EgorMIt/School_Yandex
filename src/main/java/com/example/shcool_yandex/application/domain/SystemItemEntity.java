@@ -60,4 +60,10 @@ public class SystemItemEntity {
     @Column(name = "size")
     private Long size;
 
+    /**
+     * Флаг актуальной версии файла.
+     */
+    @Column(name = "is_active")
+    private Boolean isActive;
+
 }

@@ -2,6 +2,7 @@ package com.example.shcool_yandex.application.utils;
 
 import com.example.shcool_yandex.application.domain.SystemItemEntity;
 import com.example.shcool_yandex.application.model.SystemItem;
+import com.example.shcool_yandex.application.model.SystemItemHistoryUnit;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 public class ModelMapper {
 
     /**
-     * Маппер сущности {@link SystemItemEntity} в модель chapter.
+     * Маппер сущности {@link SystemItemEntity} в модель {@link SystemItem}.
      *
      * @param entity сущность.
      * @return модель {@link SystemItem}.
@@ -28,6 +29,21 @@ public class ModelMapper {
                 entity.getType(),
                 entity.getSize(),
                 children);
+    }
+
+    /**
+     * Маппер сущности {@link SystemItemEntity} в модель {@link SystemItemHistoryUnit}.
+     *
+     * @param entity сущность.
+     * @return модель {@link SystemItemHistoryUnit}.
+     */
+    public SystemItemHistoryUnit mapToSystemItemHistoryUnit(SystemItemEntity entity) {
+       return SystemItemHistoryUnit.of(entity.getNameId(),
+               entity.getUrl(),
+               entity.getParentId(),
+               entity.getType(),
+               entity.getSize(),
+               entity.getDate());
     }
 
 }
