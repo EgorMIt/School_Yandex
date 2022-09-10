@@ -148,7 +148,7 @@ public class ItemServiceImpl implements ItemService {
 
         LocalDateTime finishDate = LocalDateTime.parse(date, formatter);
         LocalDateTime startDate = finishDate.minusDays(1);
-        List<SystemItemHistoryUnit> items = systemItemRepository.findAllByIsActiveAndDateBetweenOrderByDateDesc(true, startDate, finishDate)
+        List<SystemItemHistoryUnit> items = systemItemRepository.findAllByIsActiveAndTypeAndDateBetweenOrderByDateDesc(true, SystemItemType.FILE, startDate, finishDate)
                 .stream()
                 .map(modelMapper::mapToSystemItemHistoryUnit)
                 .collect(Collectors.toList());

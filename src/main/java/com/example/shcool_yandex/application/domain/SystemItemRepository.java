@@ -40,7 +40,7 @@ public interface SystemItemRepository extends JpaRepository<SystemItemEntity, Lo
      * @param finishDate дата окончания
      * @return список {@link SystemItemEntity}
      */
-    List<SystemItemEntity> findAllByIsActiveAndDateBetweenOrderByDateDesc(Boolean isActive, LocalDateTime startDate, LocalDateTime finishDate);
+    List<SystemItemEntity> findAllByIsActiveAndTypeAndDateBetweenOrderByDateDesc(Boolean isActive, SystemItemType type, LocalDateTime startDate, LocalDateTime finishDate);
 
     /**
      * Получение всех версий объекта system_item в промежутке дат.
