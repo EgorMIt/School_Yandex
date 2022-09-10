@@ -3,15 +3,18 @@ package com.example.shcool_yandex.application.web;
 import com.example.shcool_yandex.application.common.Endpoints;
 import com.example.shcool_yandex.application.model.SystemItem;
 import com.example.shcool_yandex.application.model.SystemItemHistoryResponse;
-import com.example.shcool_yandex.application.model.SystemItemHistoryUnit;
 import com.example.shcool_yandex.application.model.SystemItemImportRequest;
 import com.example.shcool_yandex.application.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Обработчик запросов к {@link ItemService}.
@@ -81,8 +84,8 @@ public class ItemController {
      */
     @GetMapping(value = Endpoints.ITEM_HISTORY)
     public ResponseEntity<SystemItemHistoryResponse> getHistoryForItem(@RequestParam String dateStart,
-                                                                         @RequestParam String dateEnd,
-                                                                         @PathVariable String id) {
+                                                                       @RequestParam String dateEnd,
+                                                                       @PathVariable String id) {
         return new ResponseEntity<>(itemService.getHistoryForItem(id, dateStart, dateEnd), HttpStatus.OK);
     }
 }
