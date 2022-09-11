@@ -54,6 +54,12 @@ public class ItemServiceImpl implements ItemService {
      */
     private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
+    /**
+     * Создание нового файла.
+     *
+     * @param item       модель.
+     * @param updateDate дата импорта.
+     */
     @Override
     @Transactional
     public void createItem(SystemItemImport item, String updateDate) {
@@ -63,9 +69,10 @@ public class ItemServiceImpl implements ItemService {
 
         SystemItemEntity entity = new SystemItemEntity();
         SystemItemType type = SystemItemType.valueOf(item.getType());
+        LocalDateTime date = LocalDateTime.parse(updateDate, formatter);
 
         entity.setNameId(item.getId());
-        entity.setDate(LocalDateTime.parse(updateDate, formatter));
+        entity.setDate(date);
         entity.setType(type);
         entity.setIsActive(true);
 
@@ -77,41 +84,62 @@ public class ItemServiceImpl implements ItemService {
             entity.setParentId(null);
         }
 
+        //Проверка, нужно ли обновлять элемент, или создавать новый
         if (systemItemRepository.findByNameIdAndIsActive(item.getId(), true).isPresent()) {
             SystemItemEntity previousEntity = systemItemRepository.findByNameIdAndIsActive(item.getId(), true).get();
+
+            //Выключение предыдущей версии элемента
             ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfFalse(type.equals(previousEntity.getType()));
             previousEntity.setIsActive(false);
-            if (type == SystemItemType.FOLDER) {
-                entity.setSize(previousEntity.getSize());
-            } else {
-                entity.setSize(item.getSize());
-            }
             systemItemRepository.save(previousEntity);
+
+            switch (type) {
+                case FILE: {
+                    entity.setSize(previousEntity.getSize());
+                    break;
+                }
+                case FOLDER: {
+                    entity.setSize(item.getSize());
+                    break;
+                }
+            }
+            //Обновление размера предыдущей папки при перемещении в другую
             if ((previousEntity.getParentId() != null && (entity.getParentId() == null
                     || !previousEntity.getParentId().equals(entity.getParentId())))) {
-                updateParentFolderSize(previousEntity.getParentId(), -previousEntity.getSize());
+                updateParentFolder(previousEntity.getParentId(), -previousEntity.getSize(), date);
             }
+            //Обновление размера родительской папки
             if (previousEntity.getParentId() != null) {
-                updateParentFolderSize(entity.getParentId(), item.getSize() - previousEntity.getSize());
+                updateParentFolder(entity.getParentId(), item.getSize() - previousEntity.getSize(), date);
             } else {
-                updateParentFolderSize(entity.getParentId(), item.getSize());
+                updateParentFolder(entity.getParentId(), item.getSize(), date);
             }
 
         } else {
-            if (type == SystemItemType.FILE) {
-                entity.setSize(item.getSize());
-                entity.setUrl(item.getUrl());
-                updateParentFolderSize(entity.getParentId(), item.getSize());
-            }
-            else {
-                entity.setSize(0L);
-                entity.setUrl(null);
+            switch (type) {
+                case FILE: {
+                    entity.setSize(item.getSize());
+                    entity.setUrl(item.getUrl());
+                    updateParentFolder(entity.getParentId(), item.getSize(), date);
+                    break;
+                }
+                case FOLDER: {
+                    entity.setSize(0L);
+                    entity.setUrl(null);
+                    break;
+                }
             }
         }
 
         systemItemRepository.save(entity);
     }
 
+    /**
+     * Получение объекта system_item.
+     *
+     * @param systemItemNameId идентификатор system_item.
+     * @return модель объекта.
+     */
     @Override
     public SystemItem getItem(String systemItemNameId) {
         log.info("invoke getItem({})", systemItemNameId);
@@ -127,11 +155,18 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    /**
+     * Удаление объекта system_item.
+     *
+     * @param systemItemNameId идентификатор system_item.
+     */
     @Override
     public void deleteItem(String systemItemNameId) {
         log.info("invoke deleteItem({})", systemItemNameId);
         SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                 .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
+
+        //Удаление всех дочерних элементов
         List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentIdAndIsActive(entity.getNameId(), true);
         if (children.isEmpty()) {
             systemItemRepository.delete(entity);
@@ -141,6 +176,12 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
+    /**
+     * Получение списка обновленных объектов system_item.
+     *
+     * @param date дата фильтрации.
+     * @return {@link SystemItemHistoryResponse}.
+     */
     @Override
     public SystemItemHistoryResponse getUpdates(String date) {
         log.info("invoke getUpdates({})", date);
@@ -148,6 +189,7 @@ public class ItemServiceImpl implements ItemService {
 
         LocalDateTime finishDate = LocalDateTime.parse(date, formatter);
         LocalDateTime startDate = finishDate.minusDays(1);
+
         List<SystemItemHistoryUnit> items = systemItemRepository.findAllByIsActiveAndTypeAndDateBetweenOrderByDateDesc(true, SystemItemType.FILE, startDate, finishDate)
                 .stream()
                 .map(modelMapper::mapToSystemItemHistoryUnit)
@@ -155,6 +197,14 @@ public class ItemServiceImpl implements ItemService {
         return SystemItemHistoryResponse.of(items);
     }
 
+    /**
+     * Получение истории версий для объекта system_item.
+     *
+     * @param systemItemNameId идентификатор system_item.
+     * @param dateStart        дата начала фильтрации.
+     * @param dateEnd          дата окончания фильтрации.
+     * @return {@link SystemItemHistoryResponse}.
+     */
     @Override
     public SystemItemHistoryResponse getHistoryForItem(String systemItemNameId, String dateStart, String dateEnd) {
         log.info("invoke getHistoryForItem({}, {}, {})", systemItemNameId, dateStart, dateEnd);
@@ -163,7 +213,7 @@ public class ItemServiceImpl implements ItemService {
 
         LocalDateTime startDate = LocalDateTime.parse(dateStart, formatter);
         LocalDateTime finishDate = LocalDateTime.parse(dateEnd, formatter);
-        finishDate = finishDate.minusSeconds(1);
+        finishDate = finishDate.minusSeconds(1); // [from; to)
 
         List<SystemItemHistoryUnit> items = systemItemRepository.findAllByNameIdAndDateBetweenOrderByDateDesc(systemItemNameId, startDate, finishDate)
                 .stream()
@@ -172,14 +222,34 @@ public class ItemServiceImpl implements ItemService {
         return SystemItemHistoryResponse.of(items);
     }
 
-    private void updateParentFolderSize(String systemItemNameId, Long size) {
+    /**
+     * Рекурсивное обновление всех родительских элементов.
+     *
+     * @param systemItemNameId идентификатор родительского system_item.
+     * @param size             размер нового файла.
+     * @param updateDate       дата обновления.
+     */
+    private void updateParentFolder(String systemItemNameId, Long size, LocalDateTime updateDate) {
         if (!ObjectUtils.isEmpty(systemItemNameId)) {
+            log.info("invoke updateParentFolder({}, {}, {})", systemItemNameId, size, updateDate);
+
             SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                     .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
+            SystemItemEntity newEntity = new SystemItemEntity();
             long oldSize = entity.getSize() == null ? 0 : entity.getSize();
-            entity.setSize(oldSize + size);
+            entity.setIsActive(false);
+
+            newEntity.setNameId(entity.getNameId());
+            newEntity.setUrl(entity.getUrl());
+            newEntity.setType(entity.getType());
+            newEntity.setParentId(entity.getParentId());
+            newEntity.setIsActive(true);
+            newEntity.setSize(oldSize + size);
+            newEntity.setDate(updateDate);
+
             systemItemRepository.save(entity);
-            updateParentFolderSize(entity.getParentId(), size);
+            systemItemRepository.save(newEntity);
+            updateParentFolder(entity.getParentId(), size, updateDate);
         }
     }
 }

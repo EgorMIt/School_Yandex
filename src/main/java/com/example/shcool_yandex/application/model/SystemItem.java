@@ -21,7 +21,7 @@ public class SystemItem {
     /**
      * Имя.
      */
-    private String itemId;
+    private String id;
 
     /**
      * Ссылка на файл.

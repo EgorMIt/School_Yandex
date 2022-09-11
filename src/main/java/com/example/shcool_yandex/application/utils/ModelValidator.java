@@ -20,8 +20,10 @@ public class ModelValidator {
      * @param item модель.
      */
     public void validateItemImport(SystemItemImport item) {
-        ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfTrue(item.getUrl().length() > 255);
-        ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfFalse(item.getSize() > 0);
+        if (!ObjectUtils.isEmpty(item.getUrl()))
+            ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfTrue(item.getUrl().length() > 255);
+        if (!ObjectUtils.isEmpty(item.getSize()))
+            ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfFalse(item.getSize() > 0);
         ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfTrue(ObjectUtils.isEmpty(item.getId()));
         ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfTrue(ObjectUtils.isEmpty(item.getType()));
 
