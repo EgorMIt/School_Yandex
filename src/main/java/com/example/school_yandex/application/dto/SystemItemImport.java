@@ -1,4 +1,4 @@
-package com.example.school_yandex.application.model;
+package com.example.school_yandex.application.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

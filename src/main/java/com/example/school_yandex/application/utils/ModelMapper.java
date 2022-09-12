@@ -1,8 +1,8 @@
 package com.example.school_yandex.application.utils;
 
 import com.example.school_yandex.application.domain.SystemItemEntity;
-import com.example.school_yandex.application.model.SystemItem;
-import com.example.school_yandex.application.model.SystemItemHistoryUnit;
+import com.example.school_yandex.application.dto.SystemItem;
+import com.example.school_yandex.application.dto.SystemItemHistoryUnit;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

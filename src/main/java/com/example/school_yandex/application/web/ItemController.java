@@ -1,10 +1,11 @@
 package com.example.school_yandex.application.web;
 
 import com.example.school_yandex.application.common.Endpoints;
-import com.example.school_yandex.application.model.SystemItem;
-import com.example.school_yandex.application.model.SystemItemHistoryResponse;
-import com.example.school_yandex.application.model.SystemItemImportRequest;
+import com.example.school_yandex.application.dto.SystemItem;
+import com.example.school_yandex.application.dto.SystemItemHistoryResponse;
+import com.example.school_yandex.application.dto.SystemItemImportRequest;
 import com.example.school_yandex.application.service.ItemService;
+import com.example.school_yandex.application.utils.ModelValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,13 +32,22 @@ public class ItemController {
     private final ItemService itemService;
 
     /**
+     * {@link ModelValidator}.
+     */
+    private final ModelValidator modelValidator;
+
+    /**
      * Импорт новых объектов system_item.
      *
      * @param request запрос на импорт.
      */
     @PostMapping(value = Endpoints.IMPORT_ITEMS)
     public ResponseEntity<Object> importItems(@RequestBody SystemItemImportRequest request) {
-        request.getItems().forEach((it) -> itemService.createItem(it, request.getUpdateDate()));
+        request.getItems().forEach((it) -> {
+            modelValidator.validateItemImport(it);
+            modelValidator.validateDate(request.getUpdateDate());
+            itemService.createItem(it, request.getUpdateDate());
+        });
         return ResponseEntity.ok().build();
     }
 
@@ -71,6 +81,7 @@ public class ItemController {
      */
     @GetMapping(value = Endpoints.UPDATES)
     public ResponseEntity<SystemItemHistoryResponse> getUpdates(@RequestParam String date) {
+        modelValidator.validateDate(date);
         return new ResponseEntity<>(itemService.getUpdates(date), HttpStatus.OK);
     }
 
@@ -86,6 +97,9 @@ public class ItemController {
     public ResponseEntity<SystemItemHistoryResponse> getHistoryForItem(@RequestParam String dateStart,
                                                                        @RequestParam String dateEnd,
                                                                        @PathVariable String id) {
+        modelValidator.validateDate(dateStart);
+        modelValidator.validateDate(dateEnd);
+
         return new ResponseEntity<>(itemService.getHistoryForItem(id, dateStart, dateEnd), HttpStatus.OK);
     }
 }

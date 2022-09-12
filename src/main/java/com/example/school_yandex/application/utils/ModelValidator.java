@@ -2,7 +2,7 @@ package com.example.school_yandex.application.utils;
 
 import com.example.school_yandex.application.domain.SystemItemType;
 import com.example.school_yandex.application.error.ErrorDescriptions;
-import com.example.school_yandex.application.model.SystemItemImport;
+import com.example.school_yandex.application.dto.SystemItemImport;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 

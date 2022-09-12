@@ -3,14 +3,13 @@ package com.example.school_yandex.application.service.impl;
 import com.example.school_yandex.application.domain.SystemItemEntity;
 import com.example.school_yandex.application.domain.SystemItemRepository;
 import com.example.school_yandex.application.domain.SystemItemType;
+import com.example.school_yandex.application.dto.SystemItem;
+import com.example.school_yandex.application.dto.SystemItemHistoryResponse;
+import com.example.school_yandex.application.dto.SystemItemHistoryUnit;
+import com.example.school_yandex.application.dto.SystemItemImport;
 import com.example.school_yandex.application.error.ErrorDescriptions;
-import com.example.school_yandex.application.model.SystemItem;
-import com.example.school_yandex.application.model.SystemItemHistoryResponse;
-import com.example.school_yandex.application.model.SystemItemHistoryUnit;
-import com.example.school_yandex.application.model.SystemItemImport;
 import com.example.school_yandex.application.service.ItemService;
 import com.example.school_yandex.application.utils.ModelMapper;
-import com.example.school_yandex.application.utils.ModelValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,11 +44,6 @@ public class ItemServiceImpl implements ItemService {
     private final ModelMapper modelMapper;
 
     /**
-     * {@link ModelValidator}.
-     */
-    private final ModelValidator modelValidator;
-
-    /**
      * {@link DateTimeFormatter}.
      */
     private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
@@ -64,8 +58,6 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public void createItem(SystemItemImport item, String updateDate) {
         log.info("invoke createItem({}, {})", item, updateDate);
-        modelValidator.validateItemImport(item);
-        modelValidator.validateDate(updateDate);
 
         SystemItemEntity entity = new SystemItemEntity();
         SystemItemType type = SystemItemType.valueOf(item.getType());
@@ -185,7 +177,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public SystemItemHistoryResponse getUpdates(String date) {
         log.info("invoke getUpdates({})", date);
-        modelValidator.validateDate(date);
 
         LocalDateTime finishDate = LocalDateTime.parse(date, formatter);
         LocalDateTime startDate = finishDate.minusDays(1);
@@ -208,8 +199,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public SystemItemHistoryResponse getHistoryForItem(String systemItemNameId, String dateStart, String dateEnd) {
         log.info("invoke getHistoryForItem({}, {}, {})", systemItemNameId, dateStart, dateEnd);
-        modelValidator.validateDate(dateStart);
-        modelValidator.validateDate(dateEnd);
 
         LocalDateTime startDate = LocalDateTime.parse(dateStart, formatter);
         LocalDateTime finishDate = LocalDateTime.parse(dateEnd, formatter);

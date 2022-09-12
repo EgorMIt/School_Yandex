@@ -1,8 +1,8 @@
 package com.example.school_yandex.application.service;
 
-import com.example.school_yandex.application.model.SystemItem;
-import com.example.school_yandex.application.model.SystemItemHistoryResponse;
-import com.example.school_yandex.application.model.SystemItemImport;
+import com.example.school_yandex.application.dto.SystemItem;
+import com.example.school_yandex.application.dto.SystemItemHistoryResponse;
+import com.example.school_yandex.application.dto.SystemItemImport;
 
 /**
  * Интерфейс сервиса работы с system_item.

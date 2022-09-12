@@ -1,4 +1,4 @@
-package com.example.school_yandex.application.model;
+package com.example.school_yandex.application.dto;
 
 import com.example.school_yandex.application.domain.SystemItemType;
 import lombok.AllArgsConstructor;
@@ -6,26 +6,32 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * Модель записи об обновлении файла.
+ * Модель файла.
  *
  * @author Egor Mitrofanov.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor(staticName = "of")
-public class SystemItemHistoryUnit {
+public class SystemItem {
 
     /**
      * Имя.
      */
-    private String itemId;
+    private String id;
 
     /**
      * Ссылка на файл.
      */
     private String url;
+
+    /**
+     * Время последнего обновления.
+     */
+    private LocalDateTime date;
 
     /**
      * Идентификатор родительского элемента.
@@ -43,8 +49,8 @@ public class SystemItemHistoryUnit {
     private Long size;
 
     /**
-     * Дата обновления.
+     * Дочерние элементы.
      */
-    private LocalDateTime date;
+    private List<SystemItem> children;
 
 }
