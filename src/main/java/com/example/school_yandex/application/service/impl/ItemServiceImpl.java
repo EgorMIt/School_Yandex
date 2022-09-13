@@ -16,7 +16,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,7 +47,7 @@ public class ItemServiceImpl implements ItemService {
     /**
      * {@link DateTimeFormatter}.
      */
-    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
 
     /**
      * Создание нового элемента.
@@ -61,7 +62,7 @@ public class ItemServiceImpl implements ItemService {
 
         SystemItemEntity entity = new SystemItemEntity();
         SystemItemType type = SystemItemType.valueOf(item.getType());
-        LocalDateTime date = LocalDateTime.parse(updateDate, formatter);
+        ZonedDateTime date = ZonedDateTime.parse(updateDate, formatter);
 
         entity.setNameId(item.getId());
         entity.setDate(date);
@@ -86,12 +87,13 @@ public class ItemServiceImpl implements ItemService {
             systemItemRepository.save(previousEntity);
 
             switch (type) {
-                case FILE: {
+                case FOLDER: {
                     entity.setSize(previousEntity.getSize());
                     break;
                 }
-                case FOLDER: {
+                case FILE: {
                     entity.setSize(item.getSize());
+                    entity.setUrl(item.getUrl());
                     break;
                 }
             }
@@ -160,12 +162,11 @@ public class ItemServiceImpl implements ItemService {
 
         //Удаление всех дочерних элементов
         List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentIdAndIsActive(entity.getNameId(), true);
-        if (children.isEmpty()) {
-            systemItemRepository.delete(entity);
-        } else {
+        if (!children.isEmpty()) {
             children.forEach((item) -> deleteItem(item.getNameId()));
-            systemItemRepository.delete(entity);
         }
+        deleteOlderVersions(entity.getNameId());
+        //systemItemRepository.delete(entity);
     }
 
     /**
@@ -178,8 +179,8 @@ public class ItemServiceImpl implements ItemService {
     public SystemItemHistoryResponse getUpdates(String date) {
         log.info("invoke getUpdates({})", date);
 
-        LocalDateTime finishDate = LocalDateTime.parse(date, formatter);
-        LocalDateTime startDate = finishDate.minusDays(1);
+        ZonedDateTime finishDate = ZonedDateTime.parse(date, formatter);
+        ZonedDateTime startDate = finishDate.minusDays(1);
 
         List<SystemItemHistoryUnit> items = systemItemRepository.findAllByIsActiveAndTypeAndDateBetweenOrderByDateDesc(true, SystemItemType.FILE, startDate, finishDate)
                 .stream()
@@ -199,9 +200,12 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public SystemItemHistoryResponse getHistoryForItem(String systemItemNameId, String dateStart, String dateEnd) {
         log.info("invoke getHistoryForItem({}, {}, {})", systemItemNameId, dateStart, dateEnd);
+        systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
+                .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
 
-        LocalDateTime startDate = LocalDateTime.parse(dateStart, formatter);
-        LocalDateTime finishDate = LocalDateTime.parse(dateEnd, formatter);
+        ZonedDateTime startDate = ZonedDateTime.parse(dateStart, formatter);
+        ZonedDateTime finishDate = ZonedDateTime.parse(dateEnd, formatter);
+        ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfTrue(startDate.isAfter(finishDate));
         finishDate = finishDate.minusSeconds(1); // [from; to)
 
         List<SystemItemHistoryUnit> items = systemItemRepository.findAllByNameIdAndDateBetweenOrderByDateDesc(systemItemNameId, startDate, finishDate)
@@ -218,7 +222,7 @@ public class ItemServiceImpl implements ItemService {
      * @param size             размер нового файла.
      * @param updateDate       дата обновления.
      */
-    private void updateParentFolder(String systemItemNameId, Long size, LocalDateTime updateDate) {
+    private void updateParentFolder(String systemItemNameId, Long size, ZonedDateTime updateDate) {
         if (!ObjectUtils.isEmpty(systemItemNameId)) {
             log.info("invoke updateParentFolder({}, {}, {})", systemItemNameId, size, updateDate);
 
@@ -241,4 +245,15 @@ public class ItemServiceImpl implements ItemService {
             updateParentFolder(entity.getParentId(), size, updateDate);
         }
     }
+
+    /**
+     * Удаление всех версий элемента.
+     *
+     * @param systemItemNameId идентификатор system_item.
+     */
+    private void deleteOlderVersions(String systemItemNameId) {
+        List<SystemItemEntity> items = systemItemRepository.findSystemItemEntitiesByNameId(systemItemNameId);
+        systemItemRepository.deleteAll(items);
+    }
+
 }

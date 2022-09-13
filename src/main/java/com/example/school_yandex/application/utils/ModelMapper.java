@@ -5,6 +5,8 @@ import com.example.school_yandex.application.dto.SystemItem;
 import com.example.school_yandex.application.dto.SystemItemHistoryUnit;
 import org.springframework.stereotype.Component;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -24,7 +26,7 @@ public class ModelMapper {
     public SystemItem mapToSystemItem(SystemItemEntity entity, List<SystemItem> children) {
         return SystemItem.of(entity.getNameId(),
                 entity.getUrl(),
-                entity.getDate(),
+                ZonedDateTime.parse(entity.getDate().format(DateTimeFormatter.ISO_INSTANT)),
                 entity.getParentId(),
                 entity.getType(),
                 entity.getSize(),
@@ -43,7 +45,7 @@ public class ModelMapper {
                entity.getParentId(),
                entity.getType(),
                entity.getSize(),
-               entity.getDate());
+               ZonedDateTime.parse(entity.getDate().format(DateTimeFormatter.ISO_INSTANT)));
     }
 
 }

@@ -2,7 +2,7 @@ package com.example.school_yandex.application.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface SystemItemRepository extends JpaRepository<SystemItemEntity, Long> {
 
     /**
-     * Поиск system_item по ID.
+     * Поиск актуальных system_item по ID.
      *
      * @param nameId   идентификатор
      * @param isActive флаг актуальной версии
@@ -23,13 +23,29 @@ public interface SystemItemRepository extends JpaRepository<SystemItemEntity, Lo
     Optional<SystemItemEntity> findByNameIdAndIsActive(String nameId, Boolean isActive);
 
     /**
-     * Поиск system_item по paren_id.
+     * Поиск всех system_item по ID.
+     *
+     * @param nameId идентификатор
+     * @return {@link SystemItemEntity}
+     */
+    List<SystemItemEntity> findSystemItemEntitiesByNameId(String nameId);
+
+    /**
+     * Поиск актуальных system_item по paren_id.
      *
      * @param parentId идентификатор
      * @param isActive флаг актуальной версии
      * @return список {@link SystemItemEntity}
      */
     List<SystemItemEntity> findSystemItemEntitiesByParentIdAndIsActive(String parentId, Boolean isActive);
+
+    /**
+     * Поиск всех system_item по paren_id.
+     *
+     * @param parentId идентификатор
+     * @return список {@link SystemItemEntity}
+     */
+    List<SystemItemEntity> findSystemItemEntitiesByParentId(String parentId);
 
     /**
      * Поиск всех актуальных system_item в промежутке дат.
@@ -39,7 +55,7 @@ public interface SystemItemRepository extends JpaRepository<SystemItemEntity, Lo
      * @param finishDate дата окончания
      * @return список {@link SystemItemEntity}
      */
-    List<SystemItemEntity> findAllByIsActiveAndTypeAndDateBetweenOrderByDateDesc(Boolean isActive, SystemItemType type, LocalDateTime startDate, LocalDateTime finishDate);
+    List<SystemItemEntity> findAllByIsActiveAndTypeAndDateBetweenOrderByDateDesc(Boolean isActive, SystemItemType type, ZonedDateTime startDate, ZonedDateTime finishDate);
 
     /**
      * Получение всех версий объекта system_item в промежутке дат.
@@ -49,6 +65,6 @@ public interface SystemItemRepository extends JpaRepository<SystemItemEntity, Lo
      * @param finishDate дата окончания
      * @return список {@link SystemItemEntity}
      */
-    List<SystemItemEntity> findAllByNameIdAndDateBetweenOrderByDateDesc(String nameId, LocalDateTime startDate, LocalDateTime finishDate);
+    List<SystemItemEntity> findAllByNameIdAndDateBetweenOrderByDateDesc(String nameId, ZonedDateTime startDate, ZonedDateTime finishDate);
 
 }

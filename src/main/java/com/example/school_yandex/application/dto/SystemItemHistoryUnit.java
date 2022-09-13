@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 /**
  * Модель записи об обновлении файла.
@@ -20,7 +20,7 @@ public class SystemItemHistoryUnit {
     /**
      * Имя.
      */
-    private String itemId;
+    private String id;
 
     /**
      * Ссылка на файл.
@@ -45,6 +45,6 @@ public class SystemItemHistoryUnit {
     /**
      * Дата обновления.
      */
-    private LocalDateTime date;
+    private ZonedDateTime date;
 
 }

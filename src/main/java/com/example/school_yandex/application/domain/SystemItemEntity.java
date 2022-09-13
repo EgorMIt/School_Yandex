@@ -11,7 +11,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 /**
  * Сущность файла.
@@ -47,7 +47,7 @@ public class SystemItemEntity {
      * Время последнего обновления.
      */
     @Column(name = "date")
-    private LocalDateTime date;
+    private ZonedDateTime date;
 
     /**
      * Идентификатор родительского элемента.
