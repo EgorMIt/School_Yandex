@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>Shcool_Yandex</artifactId>
+    <artifactId>School_Yandex</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>Shcool_Yandex</name>
-    <description>Shcool_Yandex</description>
+    <name>School_Yandex</name>
+    <description>School_Yandex</description>
     <properties>
         <java.version>11</java.version>
     </properties>

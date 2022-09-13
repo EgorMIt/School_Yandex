@@ -40,14 +40,6 @@ public interface SystemItemRepository extends JpaRepository<SystemItemEntity, Lo
     List<SystemItemEntity> findSystemItemEntitiesByParentIdAndIsActive(String parentId, Boolean isActive);
 
     /**
-     * Поиск всех system_item по paren_id.
-     *
-     * @param parentId идентификатор
-     * @return список {@link SystemItemEntity}
-     */
-    List<SystemItemEntity> findSystemItemEntitiesByParentId(String parentId);
-
-    /**
      * Поиск всех актуальных system_item в промежутке дат.
      *
      * @param isActive   флаг актуальной версии
