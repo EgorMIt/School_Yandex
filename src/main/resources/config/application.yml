@@ -16,3 +16,7 @@ spring:
   mvc:
     pathmatch:
       matching-strategy: ant_path_matcher
+
+server:
+  port: 80
+  address: 0.0.0.0
