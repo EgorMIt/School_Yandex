@@ -3,8 +3,17 @@ package com.example.school_yandex.application.error;
 import com.example.school_yandex.application.error.model.ApplicationError;
 import lombok.Getter;
 
+/**
+ * Исключение приложения.
+ *
+ * @author Egor Mitrofanov.
+ */
 @Getter
-public class ApplicationException extends RuntimeException{
+public class ApplicationException extends RuntimeException {
+
+    /**
+     * {@link ApplicationError}.
+     */
     private final ApplicationError error;
 
     public ApplicationException(ApplicationError error) {

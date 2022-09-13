@@ -24,10 +24,11 @@ public class ApplicationError {
      * Создание ошибки.
      *
      * @param message текст ошибки.
-     * @param code  статус ошибки.
+     * @param code    статус ошибки.
      */
     public ApplicationError(String message, Integer code) {
         this.code = code;
         this.message = message;
     }
+
 }

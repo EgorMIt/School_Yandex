@@ -47,7 +47,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApplicationException.class)
     public ApplicationError handleApplicationException(ApplicationException ex, HttpServletResponse response) {
         response.setStatus(ex.getError().getCode());
-        log.info("Exception happened {}", ex.getMessage());
+        log.info("Exception happened ({})", ex.getMessage());
         return ex.getError();
     }
 

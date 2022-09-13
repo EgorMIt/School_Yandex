@@ -58,7 +58,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public void createItem(SystemItemImport item, String updateDate) {
-        log.info("invoke createItem({}, {})", item, updateDate);
+        log.info("invoke createItem ({}, {})", item, updateDate);
 
         SystemItemEntity entity = new SystemItemEntity();
         SystemItemType type = SystemItemType.valueOf(item.getType());
@@ -70,8 +70,9 @@ public class ItemServiceImpl implements ItemService {
         entity.setIsActive(true);
 
         if (!ObjectUtils.isEmpty(item.getParentId())) {
-            systemItemRepository.findByNameIdAndIsActive(item.getParentId(), true)
+            SystemItemEntity parentEntity = systemItemRepository.findByNameIdAndIsActive(item.getParentId(), true)
                     .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
+            ErrorDescriptions.INCORRECT_ITEM_REQUEST.throwIfTrue(parentEntity.getType() == SystemItemType.FILE);
             entity.setParentId(item.getParentId());
         } else {
             entity.setParentId(null);
@@ -136,7 +137,7 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public SystemItem getItem(String systemItemNameId) {
-        log.info("invoke getItem({})", systemItemNameId);
+        log.info("invoke getItem ({})", systemItemNameId);
         SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                 .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
         List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentIdAndIsActive(entity.getNameId(), true);
@@ -156,17 +157,18 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public void deleteItem(String systemItemNameId) {
-        log.info("invoke deleteItem({})", systemItemNameId);
+        log.info("invoke deleteItem ({})", systemItemNameId);
         SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                 .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
 
         //Удаление всех дочерних элементов
-        List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentIdAndIsActive(entity.getNameId(), true);
-        if (!children.isEmpty()) {
-            children.forEach((item) -> deleteItem(item.getNameId()));
+        if (entity.getType() == SystemItemType.FOLDER) {
+            List<SystemItemEntity> children = systemItemRepository.findSystemItemEntitiesByParentIdAndIsActive(entity.getNameId(), true);
+            if (!children.isEmpty()) {
+                children.forEach((item) -> deleteItem(item.getNameId()));
+            }
         }
         deleteOlderVersions(entity.getNameId());
-        //systemItemRepository.delete(entity);
     }
 
     /**
@@ -177,7 +179,7 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public SystemItemHistoryResponse getUpdates(String date) {
-        log.info("invoke getUpdates({})", date);
+        log.info("invoke getUpdates ({})", date);
 
         ZonedDateTime finishDate = ZonedDateTime.parse(date, formatter);
         ZonedDateTime startDate = finishDate.minusDays(1);
@@ -199,7 +201,7 @@ public class ItemServiceImpl implements ItemService {
      */
     @Override
     public SystemItemHistoryResponse getHistoryForItem(String systemItemNameId, String dateStart, String dateEnd) {
-        log.info("invoke getHistoryForItem({}, {}, {})", systemItemNameId, dateStart, dateEnd);
+        log.info("invoke getHistoryForItem ({}, {}, {})", systemItemNameId, dateStart, dateEnd);
         systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                 .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
 
@@ -224,7 +226,7 @@ public class ItemServiceImpl implements ItemService {
      */
     private void updateParentFolder(String systemItemNameId, Long size, ZonedDateTime updateDate) {
         if (!ObjectUtils.isEmpty(systemItemNameId)) {
-            log.info("invoke updateParentFolder({}, {}, {})", systemItemNameId, size, updateDate);
+            log.info("invoke updateParentFolder ({}, {}, {})", systemItemNameId, size, updateDate);
 
             SystemItemEntity entity = systemItemRepository.findByNameIdAndIsActive(systemItemNameId, true)
                     .orElseThrow(ErrorDescriptions.ITEM_NOT_FOUND::exception);
