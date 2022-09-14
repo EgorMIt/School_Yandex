@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: School_Yandex
+  datasource:
+    driverClassName: org.h2.Driver
+    url: jdbc:h2:~/test;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    locations: classpath:db/migration
+  sql:
+    init:
+      platform: h2
