@@ -93,7 +93,7 @@ public class ItemServiceImpl implements ItemService {
                     break;
                 }
                 case FILE: {
-                    entity.setSize(item.getSize());
+                    entity.setSize(!ObjectUtils.isEmpty(item.getSize()) ? item.getSize() : 0L);
                     entity.setUrl(item.getUrl());
                     break;
                 }
@@ -113,7 +113,7 @@ public class ItemServiceImpl implements ItemService {
         } else {
             switch (type) {
                 case FILE: {
-                    entity.setSize(item.getSize());
+                    entity.setSize(!ObjectUtils.isEmpty(item.getSize()) ? item.getSize() : 0L);
                     entity.setUrl(item.getUrl());
                     updateParentFolder(entity.getParentId(), item.getSize(), date);
                     break;

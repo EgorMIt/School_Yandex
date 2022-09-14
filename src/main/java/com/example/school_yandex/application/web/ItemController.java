@@ -43,6 +43,7 @@ public class ItemController {
      */
     @PostMapping(value = Endpoints.IMPORT_ITEMS)
     public ResponseEntity<Object> importItems(@RequestBody SystemItemImportRequest request) {
+        modelValidator.validateImportNames(request);
         request.getItems().forEach((it) -> {
             modelValidator.validateItemImport(it);
             modelValidator.validateDate(request.getUpdateDate());

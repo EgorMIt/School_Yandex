@@ -37,7 +37,7 @@ class SchoolYandexApplicationTests {
     @DisplayName("Проверка импорта объектов")
     public void importsTest() throws Exception {
         List<SystemItemImport> items = new ArrayList<>();
-        items.add(SystemItemImport.of("testFolderForImports", "/file1", null, "FOLDER", null));
+        items.add(SystemItemImport.of("testFolderForImports", null, null, "FOLDER", null));
         items.add(SystemItemImport.of("testFileForImports", "/file2", "testFolderForImports", "FILE", 55L));
         String date = "1980-02-01T12:00:00Z";
 
@@ -65,51 +65,59 @@ class SchoolYandexApplicationTests {
     }
 
     @Test
-    @DisplayName("Проверка на Bad Request (Неверный формат даты)")
-    public void checkWrongDate() throws Exception {
+    @DisplayName("Проверка перемещения файла между папками")
+    public void updateParentFolderTest() throws Exception {
         List<SystemItemImport> items = new ArrayList<>();
-        items.add(SystemItemImport.of("1_1", "/file1", null, "FOLDER", null));
-        String date = "3 Jun 2008 11:05:30";
+        items.add(SystemItemImport.of("testFolderForChangeFolder", null, null, "FOLDER", null));
+        items.add(SystemItemImport.of("testFileForChangeFolder", "/file2", "testFolderForChangeFolder", "FILE", 55L));
+        String date = "1980-02-01T12:00:00Z";
 
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/imports")
                         .content(asJsonString(SystemItemImportRequest.of(items, date)))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
+                .andExpect(status().isOk());
 
-    @Test
-    @DisplayName("Проверка на Bad Request (Невалидный размер файла)")
-    public void checkWrongSize() throws Exception {
-        List<SystemItemImport> items = new ArrayList<>();
-        items.add(SystemItemImport.of("1_1", "/file1", null, "FILE", -1L));
-        String date = "2022-02-01T12:00:00Z";
+        mockMvc.perform(MockMvcRequestBuilders
+                        .get("/nodes/{id}", "testFolderForChangeFolder")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.size").value(55));
+
+        items.clear();
+        items.add(SystemItemImport.of("testFileForChangeFolder", "/file2", null, "FILE", 55L));
 
         mockMvc.perform(MockMvcRequestBuilders
                         .post("/imports")
                         .content(asJsonString(SystemItemImportRequest.of(items, date)))
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Проверка на Bad Request (Невалидный URL)")
-    public void checkWrongUrl() throws Exception {
-        List<SystemItemImport> items = new ArrayList<>();
-        items.add(SystemItemImport.of("1_1", "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec.",
-                null, "FILE", 1L));
-        String date = "2022-02-01T12:00:00Z";
+                .andExpect(status().isOk());
 
         mockMvc.perform(MockMvcRequestBuilders
-                        .post("/imports")
-                        .content(asJsonString(SystemItemImportRequest.of(items, date)))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
+                        .get("/nodes/{id}", "testFolderForChangeFolder")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.size").value(0));
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/delete/{id}", "testFolderForChangeFolder")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .delete("/delete/{id}", "testFileForChangeFolder")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .get("/nodes/{id}", "testFolderForChangeFolder")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("Проверка запроса /updates")
-    public void checkUpdatesRequest() throws Exception {
+    public void updatesRequestTest() throws Exception {
         List<SystemItemImport> items = new ArrayList<>();
         items.add(SystemItemImport.of("testFileForUpdates", "/file", null, "FILE", 1L));
         String date = "1970-02-01T12:00:00Z";
@@ -166,7 +174,7 @@ class SchoolYandexApplicationTests {
 
     @Test
     @DisplayName("Проверка запроса /node/history")
-    public void checkNodeHistoryRequest() throws Exception {
+    public void nodeHistoryRequestTest() throws Exception {
         List<SystemItemImport> items = new ArrayList<>();
         items.add(SystemItemImport.of("testFileForHistory", "/file", null, "FILE", 1L));
         String date = "1960-02-01T12:00:00Z";
@@ -229,6 +237,66 @@ class SchoolYandexApplicationTests {
                         .param("dateEnd", dateEnd)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Проверка на Bad Request (Неверный формат даты)")
+    public void checkWrongDate() throws Exception {
+        List<SystemItemImport> items = new ArrayList<>();
+        items.add(SystemItemImport.of("1_1", "/file1", null, "FOLDER", null));
+        String date = "3 Jun 2008 11:05:30";
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/imports")
+                        .content(asJsonString(SystemItemImportRequest.of(items, date)))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Проверка на Bad Request (Невалидный размер файла)")
+    public void checkWrongSize() throws Exception {
+        List<SystemItemImport> items = new ArrayList<>();
+        items.add(SystemItemImport.of("1_1", "/file1", null, "FILE", -1L));
+        String date = "2022-02-01T12:00:00Z";
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/imports")
+                        .content(asJsonString(SystemItemImportRequest.of(items, date)))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Проверка на Bad Request (Невалидный URL)")
+    public void checkWrongUrl() throws Exception {
+        List<SystemItemImport> items = new ArrayList<>();
+        items.add(SystemItemImport.of("1_1", "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec.",
+                null, "FILE", 1L));
+        String date = "2022-02-01T12:00:00Z";
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/imports")
+                        .content(asJsonString(SystemItemImportRequest.of(items, date)))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("Проверка на Bad Request (Импорт одного объекта несколько раз в одном запросе)")
+    public void checkItemIdIdentity() throws Exception {
+        List<SystemItemImport> items = new ArrayList<>();
+        items.add(SystemItemImport.of("1_1", "/file",
+                null, "FILE", 1L));
+        items.add(SystemItemImport.of("1_1", "/file",
+                null, "FILE", 5L));
+        String date = "2022-02-01T12:00:00Z";
+
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/imports")
+                        .content(asJsonString(SystemItemImportRequest.of(items, date)))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
     }
 
     public static String asJsonString(final Object obj) {
